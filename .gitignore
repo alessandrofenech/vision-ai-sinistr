@@ -1,0 +1,6 @@
+# Chiave API - NON caricare su GitHub!
+config.js
+
+# File di sistema
+.DS_Store
+Thumbs.db
