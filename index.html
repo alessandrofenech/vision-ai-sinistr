@@ -4,291 +4,270 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Vision AI Sinistri</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; }
-  #root { width: 100%; max-width: 480px; background: #fff; min-height: 100vh; padding: 1.25rem; }
+  #app { width: 100%; max-width: 480px; background: #fff; min-height: 100vh; padding: 1.25rem; }
   input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit; color: #111; background: #fff; outline: none; }
   input:focus, select:focus, textarea:focus { border-color: #185FA5; }
   textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
   button { cursor: pointer; font-family: inherit; }
+  .lbl { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+  .mb14 { margin-bottom: 14px; }
+  .mb20 { margin-bottom: 20px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-mic { flex: 1; padding: 11px 8px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #333; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-mic.active { background: #E6F1FB; color: #185FA5; }
+  .btn-main { flex: 2; padding: 11px 8px; border-radius: 10px; border: none; background: #185FA5; color: #fff; font-size: 14px; font-weight: 600; }
+  .btn-main:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-full { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #185FA5; color: #fff; font-size: 14px; font-weight: 600; margin-top: 12px; }
+  .btn-outline { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #333; font-size: 14px; margin-top: 10px; }
+  .progress { display: flex; gap: 4px; margin-bottom: 24px; }
+  .bar { flex: 1; height: 4px; border-radius: 2px; background: #e0e0e0; transition: background 0.3s; }
+  .bar.on { background: #185FA5; }
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .spinner-wrap { text-align: center; padding: 3rem 0; }
+  .spinner { width: 48px; height: 48px; border: 4px solid #B5D4F4; border-top-color: #185FA5; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .verdict { border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 16px; }
+  .verdict p { font-size: 14px; white-space: pre-wrap; line-height: 1.75; }
+  .verdict.ok { background: #f0faf0; border: 1px solid #639922; }
+  .verdict.ok p { color: #27500A; }
+  .verdict.ko { background: #fff5f5; border: 1px solid #E24B4A; }
+  .verdict.ko p { color: #791F1F; }
+  .drop-zone { border: 2px dashed #ccc; border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; margin-bottom: 16px; background: #fafafa; }
+  .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .thumb { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
+  .thumb img { width: 100%; height: 90px; object-fit: cover; display: block; }
+  .thumb-video { height: 90px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; }
+  .thumb-rm { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .summary { background: #f9f9f9; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 16px; font-size: 13px; color: #555; line-height: 1.8; }
+  .success-wrap { text-align: center; margin-bottom: 24px; }
+  .success-icon { width: 60px; height: 60px; border-radius: 50%; background: #f0faf0; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 28px; }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
+<div id="app">
 
-const SYSTEM_PROMPT = `Sei un assistente specializzato nella gestione dei sinistri assicurativi per clienti di un'agenzia assicurativa italiana.
-
-KNOWLEDGE BASE (placeholder — da sostituire con le polizze reali):
-- Polizza Casa: copre danni da incendio, furto, allagamento, eventi atmosferici, responsabilità civile verso terzi.
-- Polizza Auto: copre danni a terzi (RCA obbligatoria), furto, incendio, danni propri (se incluso).
-- Polizza PMI: copre danni ai locali, macchinari, merci, RC verso terzi e dipendenti.
-- Esclusioni generali: dolo, guerra, usura normale, vizi preesistenti non dichiarati.
-
-Il tuo compito:
-1. Analizza la descrizione del sinistro fornita dall'utente.
-2. Valuta se è POTENZIALMENTE INDENNIZZABILE in base alla knowledge base.
-3. Se indennizzabile: fornisci una guida passo-passo chiara su cosa fare (es. foto, video, testimonianze, vigili del fuoco, denuncia, ecc.).
-4. Se non indennizzabile: spiega brevemente il motivo.
-5. Sii conciso, chiaro, empatico. Usa un linguaggio semplice adatto a una persona in stato di stress.
-6. Alla fine chiedi se ha foto o video da allegare.
-
-Rispondi SEMPRE in italiano. Struttura la risposta con:
-- Una riga di verdetto (es. ✅ Sinistro potenzialmente indennizzabile oppure ❌ Sinistro probabilmente non coperto)
-- La motivazione breve
-- I passi da seguire (numerati, se indennizzabile)`;
-
-const steps = ["descrizione", "analisi", "guida", "allegati", "riepilogo"];
-
-function App() {
-  const [step, setStep] = React.useState("descrizione");
-  const [testo, setTesto] = React.useState("");
-  const [risposta, setRisposta] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [recording, setRecording] = React.useState(false);
-  const [files, setFiles] = React.useState([]);
-  const [previews, setPreviews] = React.useState([]);
-  const [nomeUtente, setNomeUtente] = React.useState("");
-  const [polizza, setPolizza] = React.useState("");
-  const recognitionRef = React.useRef(null);
-  const fileInputRef = React.useRef(null);
-
-  const stepIndex = steps.indexOf(step);
-
-  const startRecording = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Dettatura non supportata su questo browser. Prova Chrome su Android o Safari su iPhone."); return; }
-    const r = new SR();
-    r.lang = "it-IT";
-    r.continuous = false;
-    r.interimResults = false;
-    r.onresult = (e) => setTesto(prev => (prev + " " + e.results[0][0].transcript).trim());
-    r.onend = () => setRecording(false);
-    r.onerror = () => setRecording(false);
-    r.start();
-    recognitionRef.current = r;
-    setRecording(true);
-  };
-
-  const stopRecording = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
-    setRecording(false);
-  };
-
-  const analizzaSinistro = async () => {
-    if (!testo.trim()) return;
-    setLoading(true);
-    setStep("analisi");
-
-    const apiKey = window.APP_CONFIG?.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "INSERISCI_QUI_LA_TUA_API_KEY") {
-      setRisposta("⚠️ Chiave API non configurata. Apri il file config.js e inserisci la tua API key Anthropic.");
-      setStep("guida");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-allow-browser": "true"
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: `Polizza: ${polizza || "non specificata"}\n\nSinistro:\n${testo}` }]
-        })
-      });
-      const data = await res.json();
-      const txt = data.content?.map(b => b.text || "").join("\n") || "Errore nella risposta.";
-      setRisposta(txt);
-    } catch (err) {
-      setRisposta("❌ Errore di connessione. Controlla la tua rete e riprova.");
-    }
-    setLoading(false);
-    setStep("guida");
-  };
-
-  const handleFiles = (e) => {
-    const selected = Array.from(e.target.files);
-    setFiles(prev => [...prev, ...selected]);
-    selected.forEach(f => {
-      const reader = new FileReader();
-      reader.onload = ev => setPreviews(prev => [...prev, { name: f.name, url: ev.target.result, type: f.type }]);
-      reader.readAsDataURL(f);
-    });
-  };
-
-  const removeFile = (i) => {
-    setFiles(f => f.filter((_, idx) => idx !== i));
-    setPreviews(p => p.filter((_, idx) => idx !== i));
-  };
-
-  const inviaRiepilogo = () => setStep("riepilogo");
-
-  const reset = () => {
-    setStep("descrizione"); setTesto(""); setRisposta("");
-    setFiles([]); setPreviews([]); setNomeUtente(""); setPolizza("");
-  };
-
-  const isIndennizzabile = risposta.includes("✅");
-
-  return (
+  <div class="header">
+    <div class="avatar">🛡️</div>
     <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid #eee" }}>
-        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: 18 }}>🛡️</span>
-        </div>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 15, color: "#111" }}>Vision AI Sinistri</div>
-          <div style={{ fontSize: 12, color: "#888" }}>Assistente guidato per la gestione sinistri</div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
-        {["Descrizione","Analisi","Guida","Allegati","Invio"].map((s, i) => (
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= stepIndex ? "#185FA5" : "#e0e0e0", transition: "background 0.3s" }} title={s}></div>
-        ))}
-      </div>
-
-      {/* STEP: DESCRIZIONE */}
-      {step === "descrizione" && (
-        <div>
-          <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6 }}>Il tuo nome (opzionale)</label>
-          <input value={nomeUtente} onChange={e => setNomeUtente(e.target.value)} placeholder="Es. Mario Rossi" style={{ marginBottom: 16 }} />
-
-          <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6 }}>Tipo di polizza</label>
-          <select value={polizza} onChange={e => setPolizza(e.target.value)} style={{ marginBottom: 20 }}>
-            <option value="">Seleziona...</option>
-            <option>Polizza Casa</option>
-            <option>Polizza Auto</option>
-            <option>Polizza PMI</option>
-            <option>Non so / Altro</option>
-          </select>
-
-          <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6 }}>Descrivi cosa è successo</label>
-          <textarea
-            value={testo}
-            onChange={e => setTesto(e.target.value)}
-            placeholder="Es. Stanotte è esplosa una tubatura in bagno, l'acqua ha allagato il pavimento e danneggiato i mobili del soggiorno..."
-          />
-
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button
-              onClick={recording ? stopRecording : startRecording}
-              style={{ flex: 1, padding: "11px 8px", borderRadius: 10, border: "1px solid #ddd", background: recording ? "#E6F1FB" : "#fff", color: recording ? "#185FA5" : "#333", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-            >
-              {recording ? "⏹ Stop" : "🎤 Detta"}
-            </button>
-            <button
-              onClick={analizzaSinistro}
-              disabled={!testo.trim()}
-              style={{ flex: 2, padding: "11px 8px", borderRadius: 10, border: "none", background: testo.trim() ? "#185FA5" : "#ccc", color: "#fff", fontSize: 14, fontWeight: 600 }}
-            >
-              Analizza sinistro →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP: ANALISI (loading) */}
-      {step === "analisi" && (
-        <div style={{ textAlign: "center", padding: "3rem 0" }}>
-          <div style={{ width: 48, height: 48, border: "4px solid #B5D4F4", borderTopColor: "#185FA5", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }}></div>
-          <p style={{ color: "#888", fontSize: 14 }}>Sto analizzando il sinistro...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      )}
-
-      {/* STEP: GUIDA */}
-      {step === "guida" && (
-        <div>
-          <div style={{ background: isIndennizzabile ? "#f0faf0" : "#fff5f5", border: `1px solid ${isIndennizzabile ? "#639922" : "#E24B4A"}`, borderRadius: 12, padding: "1rem 1.25rem", marginBottom: 16 }}>
-            <p style={{ fontSize: 14, color: isIndennizzabile ? "#27500A" : "#791F1F", whiteSpace: "pre-wrap", lineHeight: 1.75 }}>{risposta}</p>
-          </div>
-          <button onClick={() => setStep("allegati")} style={{ width: "100%", padding: 12, borderRadius: 10, border: "none", background: "#185FA5", color: "#fff", fontSize: 14, fontWeight: 600 }}>
-            Continua → Allega foto/video
-          </button>
-        </div>
-      )}
-
-      {/* STEP: ALLEGATI */}
-      {step === "allegati" && (
-        <div>
-          <p style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>Carica foto o video del sinistro</p>
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            style={{ border: "2px dashed #ccc", borderRadius: 12, padding: "1.5rem", textAlign: "center", cursor: "pointer", marginBottom: 16, background: "#fafafa" }}
-          >
-            <div style={{ fontSize: 32, marginBottom: 6 }}>📎</div>
-            <p style={{ fontSize: 13, color: "#666" }}>Tocca per selezionare</p>
-            <p style={{ fontSize: 11, color: "#aaa", marginTop: 4 }}>Foto e video dalla galleria o fotocamera</p>
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple capture="environment" onChange={handleFiles} style={{ display: "none" }} />
-
-          {previews.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-              {previews.map((p, i) => (
-                <div key={i} style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #eee" }}>
-                  {p.type.startsWith("image") ? (
-                    <img src={p.url} alt={p.name} style={{ width: "100%", height: 90, objectFit: "cover", display: "block" }} />
-                  ) : (
-                    <div style={{ height: 90, background: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 24 }}>🎬</span>
-                      <span style={{ fontSize: 10, color: "#888", padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{p.name}</span>
-                    </div>
-                  )}
-                  <button onClick={() => removeFile(i)} style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button onClick={inviaRiepilogo} style={{ width: "100%", padding: 12, borderRadius: 10, border: "none", background: "#185FA5", color: "#fff", fontSize: 14, fontWeight: 600 }}>
-            {files.length > 0 ? `Invia con ${files.length} allegat${files.length === 1 ? "o" : "i"} →` : "Invia senza allegati →"}
-          </button>
-        </div>
-      )}
-
-      {/* STEP: RIEPILOGO */}
-      {step === "riepilogo" && (
-        <div>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#f0faf0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 28 }}>✅</div>
-            <div style={{ fontWeight: 600, fontSize: 16, color: "#111", marginBottom: 4 }}>Segnalazione inviata</div>
-            <div style={{ fontSize: 13, color: "#888" }}>La pratica è stata trasmessa al responsabile sinistri e all'assicuratore.</div>
-          </div>
-
-          <div style={{ background: "#f9f9f9", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: 16, fontSize: 13, color: "#555", lineHeight: 1.8 }}>
-            <div style={{ fontWeight: 600, color: "#111", marginBottom: 8 }}>Riepilogo pratica</div>
-            {nomeUtente && <div><strong>Assicurato:</strong> {nomeUtente}</div>}
-            {polizza && <div><strong>Polizza:</strong> {polizza}</div>}
-            <div><strong>Descrizione:</strong> {testo.slice(0, 100)}{testo.length > 100 ? "..." : ""}</div>
-            <div><strong>Allegati:</strong> {files.length > 0 ? `${files.length} file` : "Nessuno"}</div>
-            <div><strong>Inviato a:</strong> responsabile.sinistri@agenzia.it, liquidazione@assicuratore.it</div>
-          </div>
-
-          <button onClick={reset} style={{ width: "100%", padding: 12, borderRadius: 10, border: "1px solid #ddd", background: "#fff", color: "#333", fontSize: 14 }}>
-            + Nuovo sinistro
-          </button>
-        </div>
-      )}
+      <div style="font-weight:600;font-size:15px;color:#111">Vision AI Sinistri</div>
+      <div style="font-size:12px;color:#888">Assistente guidato per la gestione sinistri</div>
     </div>
-  );
+  </div>
+
+  <div class="progress">
+    <div class="bar on" id="b0"></div>
+    <div class="bar" id="b1"></div>
+    <div class="bar" id="b2"></div>
+    <div class="bar" id="b3"></div>
+    <div class="bar" id="b4"></div>
+  </div>
+
+  <!-- STEP 1: DESCRIZIONE -->
+  <div id="step-descrizione">
+    <label class="lbl">Il tuo nome (opzionale)</label>
+    <input id="nome" placeholder="Es. Mario Rossi" class="mb14" />
+    <label class="lbl">Tipo di polizza</label>
+    <select id="polizza" class="mb20">
+      <option value="">Seleziona...</option>
+      <option>Polizza Casa</option>
+      <option>Polizza Auto</option>
+      <option>Polizza PMI</option>
+      <option>Non so / Altro</option>
+    </select>
+    <label class="lbl">Descrivi cosa è successo</label>
+    <textarea id="testo" placeholder="Es. Stanotte è esplosa una tubatura in bagno, l'acqua ha allagato il pavimento e danneggiato i mobili del soggiorno..."></textarea>
+    <div class="btn-row">
+      <button class="btn-mic" id="mic-btn" onclick="toggleMic()">🎤 Detta</button>
+      <button class="btn-main" id="analizza-btn" onclick="analizza()" disabled>Analizza sinistro →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: ANALISI -->
+  <div id="step-analisi" class="hidden">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <p style="color:#888;font-size:14px">Sto analizzando il sinistro...</p>
+    </div>
+  </div>
+
+  <!-- STEP 3: GUIDA -->
+  <div id="step-guida" class="hidden">
+    <div class="verdict" id="verdict-box">
+      <p id="risposta-txt"></p>
+    </div>
+    <button class="btn-full" onclick="goStep('allegati')">Continua → Allega foto/video</button>
+  </div>
+
+  <!-- STEP 4: ALLEGATI -->
+  <div id="step-allegati" class="hidden">
+    <p style="font-size:14px;color:#666;margin-bottom:12px">Carica foto o video del sinistro</p>
+    <div class="drop-zone" onclick="document.getElementById('fileinput').click()">
+      <div style="font-size:32px;margin-bottom:6px">📎</div>
+      <p style="font-size:13px;color:#666">Tocca per selezionare</p>
+      <p style="font-size:11px;color:#aaa;margin-top:4px">Foto e video dalla galleria o fotocamera</p>
+    </div>
+    <input type="file" id="fileinput" accept="image/*,video/*" multiple style="display:none" onchange="handleFiles(this)" />
+    <div class="preview-grid" id="previews"></div>
+    <button class="btn-full" id="invia-btn" onclick="invia()">Invia senza allegati →</button>
+  </div>
+
+  <!-- STEP 5: RIEPILOGO -->
+  <div id="step-riepilogo" class="hidden">
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div style="font-weight:600;font-size:16px;color:#111;margin-bottom:4px">Segnalazione inviata</div>
+      <div style="font-size:13px;color:#888">La pratica è stata trasmessa al responsabile sinistri.</div>
+    </div>
+    <div class="summary" id="summary"></div>
+    <button class="btn-outline" onclick="reset()">+ Nuovo sinistro</button>
+  </div>
+
+</div>
+
+<script>
+var steps = ["descrizione","analisi","guida","allegati","riepilogo"];
+var curStep = "descrizione";
+var fileList = [];
+var previewList = [];
+var micRecognition = null;
+var micActive = false;
+
+var SYSTEM_PROMPT = "Sei un assistente specializzato nella gestione dei sinistri assicurativi per clienti di un'agenzia assicurativa italiana.\n\nKNOWLEDGE BASE:\n- Polizza Casa: copre danni da incendio, furto, allagamento, eventi atmosferici, responsabilità civile verso terzi.\n- Polizza Auto: copre danni a terzi (RCA obbligatoria), furto, incendio, danni propri (se incluso).\n- Polizza PMI: copre danni ai locali, macchinari, merci, RC verso terzi e dipendenti.\n- Esclusioni generali: dolo, guerra, usura normale, vizi preesistenti non dichiarati.\n\n1. Analizza la descrizione del sinistro.\n2. Valuta se è POTENZIALMENTE INDENNIZZABILE.\n3. Se indennizzabile: guida passo-passo su cosa fare.\n4. Se non indennizzabile: spiega il motivo.\n5. Sii conciso, chiaro, empatico.\n\nRispondi SEMPRE in italiano con:\n- ✅ Sinistro potenzialmente indennizzabile OPPURE ❌ Sinistro probabilmente non coperto\n- Motivazione breve\n- Passi numerati (se indennizzabile)";
+
+document.getElementById("testo").addEventListener("input", function() {
+  document.getElementById("analizza-btn").disabled = !this.value.trim();
+});
+
+function goStep(s) {
+  document.getElementById("step-" + curStep).classList.add("hidden");
+  curStep = s;
+  document.getElementById("step-" + s).classList.remove("hidden");
+  var idx = steps.indexOf(s);
+  for (var i = 0; i < 5; i++) {
+    var bar = document.getElementById("b" + i);
+    if (i <= idx) bar.classList.add("on");
+    else bar.classList.remove("on");
+  }
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+function toggleMic() {
+  if (micActive) { if (micRecognition) micRecognition.stop(); return; }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Dettatura non supportata. Usa Chrome o Safari."); return; }
+  var r = new SR();
+  r.lang = "it-IT"; r.continuous = false; r.interimResults = false;
+  r.onresult = function(e) {
+    var ta = document.getElementById("testo");
+    ta.value = (ta.value + " " + e.results[0][0].transcript).trim();
+    ta.dispatchEvent(new Event("input"));
+  };
+  r.onend = function() { micActive = false; document.getElementById("mic-btn").innerHTML = "🎤 Detta"; document.getElementById("mic-btn").classList.remove("active"); };
+  r.onerror = function() { micActive = false; };
+  r.start(); micRecognition = r; micActive = true;
+  document.getElementById("mic-btn").innerHTML = "⏹ Stop";
+  document.getElementById("mic-btn").classList.add("active");
+}
+
+async function analizza() {
+  var testo = document.getElementById("testo").value.trim();
+  if (!testo) return;
+  goStep("analisi");
+  var polizza = document.getElementById("polizza").value || "non specificata";
+  try {
+    var res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-allow-browser": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: "Polizza: " + polizza + "\n\nSinistro:\n" + testo }]
+      })
+    });
+    var data = await res.json();
+    var txt = "";
+    if (data.content) { data.content.forEach(function(b) { if (b.text) txt += b.text; }); }
+    if (!txt) txt = "Errore nella risposta.";
+    var box = document.getElementById("verdict-box");
+    var isOk = txt.indexOf("✅") !== -1;
+    box.className = "verdict " + (isOk ? "ok" : "ko");
+    document.getElementById("risposta-txt").textContent = txt;
+    goStep("guida");
+  } catch(e) {
+    document.getElementById("risposta-txt").textContent = "❌ Errore di connessione. Controlla la rete e riprova.";
+    document.getElementById("verdict-box").className = "verdict ko";
+    goStep("guida");
+  }
+}
+
+function handleFiles(input) {
+  Array.from(input.files).forEach(function(f) {
+    fileList.push(f);
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      previewList.push({ name: f.name, url: ev.target.result, type: f.type });
+      renderPreviews();
+    };
+    reader.readAsDataURL(f);
+  });
+  updateInviaBtn();
+}
+
+function renderPreviews() {
+  var el = document.getElementById("previews");
+  el.innerHTML = previewList.map(function(p, i) {
+    if (p.type.indexOf("image") === 0) {
+      return '<div class="thumb"><img src="' + p.url + '" alt="' + p.name + '"><button class="thumb-rm" onclick="removeFile(' + i + ')">×</button></div>';
+    } else {
+      return '<div class="thumb"><div class="thumb-video"><span style="font-size:24px">🎬</span><span style="font-size:10px;color:#888">' + p.name + '</span></div><button class="thumb-rm" onclick="removeFile(' + i + ')">×</button></div>';
+    }
+  }).join("");
+}
+
+function removeFile(i) {
+  fileList.splice(i, 1); previewList.splice(i, 1);
+  renderPreviews(); updateInviaBtn();
+}
+
+function updateInviaBtn() {
+  document.getElementById("invia-btn").textContent = fileList.length > 0
+    ? "Invia con " + fileList.length + " allegat" + (fileList.length === 1 ? "o" : "i") + " →"
+    : "Invia senza allegati →";
+}
+
+function invia() {
+  var nome = document.getElementById("nome").value;
+  var polizza = document.getElementById("polizza").value;
+  var testo = document.getElementById("testo").value;
+  var html = '<div style="font-weight:600;color:#111;margin-bottom:8px">Riepilogo pratica</div>';
+  if (nome) html += "<div><strong>Assicurato:</strong> " + nome + "</div>";
+  if (polizza) html += "<div><strong>Polizza:</strong> " + polizza + "</div>";
+  html += "<div><strong>Descrizione:</strong> " + testo.slice(0, 100) + (testo.length > 100 ? "..." : "") + "</div>";
+  html += "<div><strong>Allegati:</strong> " + (fileList.length > 0 ? fileList.length + " file" : "Nessuno") + "</div>";
+  html += "<div><strong>Inviato a:</strong> responsabile.sinistri@agenzia.it</div>";
+  document.getElementById("summary").innerHTML = html;
+  goStep("riepilogo");
+}
+
+function reset() {
+  fileList = []; previewList = [];
+  document.getElementById("nome").value = "";
+  document.getElementById("polizza").value = "";
+  document.getElementById("testo").value = "";
+  document.getElementById("analizza-btn").disabled = true;
+  document.getElementById("previews").innerHTML = "";
+  updateInviaBtn();
+  goStep("descrizione");
+}
 </script>
 </body>
 </html>
